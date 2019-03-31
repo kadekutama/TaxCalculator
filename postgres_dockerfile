@@ -1,0 +1,3 @@
+FROM postgres:latest
+
+COPY tax_calculator.sql /docker-entrypoint-initdb.d/

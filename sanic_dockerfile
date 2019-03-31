@@ -1,0 +1,24 @@
+FROM ubuntu:latest
+
+ARG CONDA_PATH_ARG=PATH=/root/miniconda3/bin:$PATH
+ARG GCC_PATH_ARG=PATH=/usr/bin:$PATH
+ENV GUNICORN_PORT_ENV 8000
+
+WORKDIR /tax_calculator
+COPY ./tax_calculator ./
+SHELL ["/bin/bash", "-c"]
+RUN apt-get update -y && \
+    apt-get install -y wget && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash Miniconda3-latest-Linux-x86_64.sh -b && \
+    export ${CONDA_PATH_ARG} && \
+    echo "${CONDA_PATH_ARG}" >> ~/.bashrc && \
+    source ~/.bashrc && \
+    conda update -y conda && \
+    conda update -y --all && \
+    conda install -y -c conda-forge sanic && \
+    conda install -y -c anaconda jinja2 && \
+    pip install gino gunicorn
+
+EXPOSE $GUNICORN_PORT_ENV
+CMD exec /bin/bash -c "/root/miniconda3/bin/gunicorn main:app --bind 0.0.0.0:${GUNICORN_PORT_ENV} --worker-class sanic.worker.GunicornWorker --workers 4 --threads 2"

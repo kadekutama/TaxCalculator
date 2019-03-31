@@ -1,0 +1,42 @@
+version: "3"
+
+services: 
+  postgresql:
+    build: 
+      context: .
+      dockerfile: postgres_dockerfile
+    ports:
+      - 5432:5432
+    environment: 
+      POSTGRES_USER:  "postgres"
+      POSTGRES_PASSWORD:  "haido"
+      POSTGRES_DB:  "taxcalculator"
+    container_name: postgresql-tax-calc
+    networks: 
+      - sanic-postgres
+  tax-calculator:
+    build: 
+      context: .
+      dockerfile: sanic_dockerfile
+    # ports: 
+    #   - 8000:8000
+    depends_on: 
+      - postgresql
+    networks: 
+      - sanic-postgres
+    container_name: tax-calculator
+  nginx:
+    build: 
+      context: .
+      dockerfile: nginx_dockerfile
+    ports: 
+      - 2345:80
+    depends_on: 
+      - postgresql
+      - tax-calculator
+    networks: 
+      - sanic-postgres
+    container_name: nginx-tax-calc
+networks: 
+  sanic-postgres:
+    driver: bridge
