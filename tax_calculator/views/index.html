@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+
+{% block style %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+
+{% block content %}
+<div>
+	<div id="product-container">
+		<select class="select-product" style="width: 30%"></select>
+		<br>
+	</div>
+	<br>
+	<button type="button" class="btn btn-default" id="add-product-btn" onclick="AddInput()">Add Product</button>
+	<button type="button" class="btn btn-default" id="reset-btn" onclick="RefreshPage()">Reset</button>
+	<button type="button" class="btn btn-default" id="submit-btn" onclick="SubmitInput()">Submit</button>
+	<br>
+	<br>
+	<div id="table-container"></div>
+</div>
+{% endblock %}
+
+
+{% block script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script>
+	let products;
+	$(document).ready(function() {
+		LoadProductData();
+	});
+
+	function LoadProductData() {
+		$('.select-product').select2({
+			width: "resolve",
+			placeholder: "Select a product.",
+			minimumResultsForSearch: -1,
+			ajax: {
+				url: "/get_all_products/select2",
+				dataType: "json",
+				processResults: function (data) {
+					products = data.products;
+					return {
+						results: data.products
+					}
+				}
+			}
+		});
+	}
+
+	function AddInput(){
+		$('#product-container').append('<select class="select-product" style="width: 30%"></select><br>');
+		LoadProductData();
+	}
+
+	function SubmitInput() {
+		let selected_products = [];
+		$('.select-product').each(function (idx, obj) {
+			selected_products.push(parseInt(obj.value));
+			// console.log("Index: ", idx, " Value: ", obj.value, "select2-text: ", obj.innerText);
+		});
+
+		$.ajax({
+			url: "/get_bill",
+			type: "POST",
+			dataType: "json",
+			contentType: "application/json",
+			data: JSON.stringify({
+				"products": selected_products
+			})
+		}).done(function (data) {
+			if ($("#bill-table").length > 0) {
+				$("#bill-table").remove();
+				$("#prices").remove();
+			}
+			let tableString = '\
+			<table id="bill-table" class="table">\
+				<thead>\
+					<tr>\
+						<td>Name</td>\
+						<td>Tax Code</td>\
+						<td>Type</td>\
+						<td>Refundable</td>\
+						<td>Price</td>\
+						<td>Tax</td>\
+						<td>Amount</td>\
+					</tr>\
+				</thead>\
+				<tbody>';
+
+			for (let bill of data["detail_bill"]) {
+				let tr = '<tr>' +
+						 '<td>' + bill["name"] + '</td>' +
+						 '<td>' + bill["tax_code"] + '</td>' +
+						 '<td>' + bill["type"] + '</td>' +
+						 '<td>' + bill["refundable"] + '</td>' +
+						 '<td>' + bill["price"] + '</td>' +
+						 '<td>' + bill["tax"] + '</td>' +
+						 '<td>' + bill["amount"] + '</td>' +
+						 '</tr>';
+				tableString += tr;
+			}
+
+			tableString += '\
+				</tbody>\
+			</table>';
+
+			let ul = '<ul id="prices">';
+			ul += '<li>Price Subtotal: ' + data["price_subtotal"] + '</li>';
+			ul += '<li>Tax Subtotal: ' + data["tax_subtotal"] + '</li>';
+			ul += '<li>Grand Total: ' + data["grand_total"] + '</li>';
+			ul += '</ul>';
+
+			$("#table-container").append(tableString);
+			$("#table-container").append(ul);
+		}).fail(function (data) {
+			alert(data["message"]);
+			location.reload();
+		});
+	}
+
+	function RefreshPage() {
+		location.reload();
+	}
+</script>
+{% endblock %}
