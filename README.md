@@ -1,5 +1,7 @@
 # TaxCalculator
 
+This was the technical test for Back-End Engineer at Shopee Indonesia.
+
 <b>To run the containers:</b>
 <br>
 docker-compose up
